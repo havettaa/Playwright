@@ -1,0 +1,20 @@
+trigger: none
+
+# Set variables once
+parameters:
+- name: TargetEnv
+  default: 'test'
+- name: E2EProjects 
+  type: object
+  default:
+    E2EProjectList:
+    - BPM
+    - TicketApp
+
+jobs:
+- ${{ each projectName in parameters.E2EProjects.E2EProjectList }}:
+  - template: azure-single-test-run.yml
+    parameters:
+      E2EProject: ${{projectName}}
+      csprojName: Palfinger.CoreServices.E2E.${{projectName}}
+      TargetEnv: ${{parameters.TargetEnv}}

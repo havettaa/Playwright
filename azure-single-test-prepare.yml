@@ -1,0 +1,45 @@
+parameters:
+  csprojName: ''
+  palfingerNugetFeed: '38f9ed60-a717-46ae-a2b9-eb4d1c989985'
+
+steps:
+- task: UseDotNet@2
+  displayName: "Install .NET"
+  inputs:
+    packageType: "sdk"
+    version: "7.0.x"
+
+- task: DotNetCoreCLI@2
+  displayName: New Manifest for tool
+  inputs:
+    command: custom
+    custom: "new "
+    arguments: tool-manifest
+
+- task: DotNetCoreCLI@2
+  displayName: Install Playwright CLI
+  inputs:
+    command: custom
+    custom: "tool "
+    arguments: install Microsoft.Playwright.CLI --ignore-failed-sources
+
+- task: DotNetCoreCLI@2
+  displayName: Restore Nuget from vstsFeed
+  inputs:
+    command: restore
+    projects: "**/*${{parameters.csprojName}}.csproj"
+    vstsFeed: ${{parameters.palfingerNugetFeed}}
+    verbosityRestore: Minimal
+
+- task: DotNetCoreCLI@2
+  displayName: "Build ${{parameters.csprojName}}"
+  inputs:
+    command: build
+    projects: "**/*${{parameters.csprojName}}.csproj"
+
+- task: DotNetCoreCLI@2
+  displayName: Download Playwright Browsers
+  inputs:
+    command: custom
+    custom: "tool "
+    arguments: run playwright install

@@ -1,0 +1,42 @@
+parameters:
+  E2EProject: ''
+  csprojName: ''
+  TargetEnv: ''
+
+jobs:
+- job: Job_${{parameters.E2EProject}}
+  steps:
+  - checkout: self
+
+  - template: azure-single-test-prepare.yml
+    parameters: 
+      E2EProject: ${{parameters.E2EProject}}
+      csproj: ${{parameters.csprojName}}
+
+  - task: AzureCLI@2
+    displayName: "Run E2E ${{parameters.E2EProject}}"
+    inputs:
+      azureSubscription: 'CoreServices'
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: |
+        dotnet test ${{parameters.csprojName}}/${{parameters.csprojName}}.csproj -e BROWSER=chromium -e TARGETENV=${{parameters.TargetEnv}}
+
+  - task: CopyFiles@2
+    displayName: "Copy test results into artifact directory"
+    inputs:
+      contents: "${{parameters.csprojName}}/**/?(*.webm|*.mp4)"
+      targetFolder: $(Build.ArtifactStagingDirectory)
+    condition: succeededOrFailed()
+  
+  - powershell: |
+      $fileExists = Test-Path -Path "$(Build.ArtifactStagingDirectory)/${{parameters.csprojName}}/bin"
+      Write-Output "##vso[task.setvariable variable=binFolderExists]$fileExists"
+    displayName: "Check folder existance before publish artifact"
+    condition: succeededOrFailed()
+
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathToPublish: "$(Build.ArtifactStagingDirectory)/${{parameters.csprojName}}/bin"
+      artifactName: BuildArtifacts for ${{parameters.E2EProject}}
+    condition: eq(variables['binFolderExists'], True)

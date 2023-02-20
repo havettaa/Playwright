@@ -1,0 +1,17 @@
+pool:
+  vmImage: ubuntu-latest
+
+resources:
+  repositories:
+    - repository: CoreServicesE2E
+      type: git
+      name: Core Services/Palfinger.CoreServices.E2E
+      ref: main
+
+jobs:
+- template: azure-pipeline.yml@CoreServicesE2E
+  parameters:
+    E2EProjects:
+      E2EProjectList:
+      - BPM
+      - TicketApp
